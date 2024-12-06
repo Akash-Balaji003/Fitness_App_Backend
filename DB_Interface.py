@@ -9,7 +9,7 @@ def verify_password(plain_password, hashed_password):
 
 def get_db_connection():
     return mysql.connector.connect(
-        hostname="fitness-database.mysql.database.azure.com",
+        host="fitness-database.mysql.database.azure.com",
         port=3306,
         username="akash",
         password="Akash003!",
