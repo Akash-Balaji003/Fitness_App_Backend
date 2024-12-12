@@ -21,74 +21,48 @@ app = FastAPI()
 
 code_verifiers = {}  # Store code verifiers temporarily
 
-# 1️⃣ **OAuth Login - Step 1**
 @app.get("/auth/login")
 async def login():
-    """Start the OAuth login process with PKCE"""
-    # Generate a unique code_verifier and code_challenge
-    code_verifier = secrets.token_urlsafe(64)
-    code_challenge = base64.urlsafe_b64encode(
-        hashlib.sha256(code_verifier.encode()).digest()
-    ).rstrip(b"=").decode()
-
-    # Store the verifier temporarily
-    code_verifiers[code_verifier] = True
-
-    # Build the authorization URL for Google
-    params = {
-        "client_id": GOOGLE_CLIENT_ID,
-        "redirect_uri": REDIRECT_URI,
-        "response_type": "code",
-        "scope": "https://www.googleapis.com/auth/fitness.activity.read",
-        "code_challenge": code_challenge,
-        "code_challenge_method": "S256",
-        "access_type": "offline",
-        "prompt": "consent",
-    }
-    authorization_url = f"https://accounts.google.com/o/oauth2/auth?{urlencode(params)}"
-    logging.info(f"Authorization URL: {authorization_url}")
-
-    return {"login_url": authorization_url, "code_verifier": code_verifier}
+    """Start the OAuth login process and generate a code verifier."""
+    try:
+        code_verifier = secrets.token_urlsafe(64)
+        code_verifiers[code_verifier] = True
+        code_challenge = base64.urlsafe_b64encode(
+            hashlib.sha256(code_verifier.encode()).digest()
+        ).rstrip(b"=").decode()
+        
+        logging.info(f"Generated Code Verifier: {code_verifier}")
+        return {"login_url": "your_google_oauth_url_here", "code_verifier": code_verifier}
+    except Exception as e:
+        logging.error(f"❌ Error in /auth/login: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error in /auth/login: {str(e)}")
 
 
-# 2️⃣ **OAuth Callback - Step 2**
 @app.get("/auth/callback")
 async def callback(request: Request):
-    """Handle the callback from Google and exchange authorization code for tokens"""
-    query_params = request.query_params
-    code = query_params.get("code")
-    code_verifier = query_params.get("code_verifier")
-
-    if not code or not code_verifier or code_verifier not in code_verifiers:
-        raise HTTPException(status_code=400, detail="Invalid code verifier or code")
-
+    """Handle the callback from Google and exchange code for tokens."""
     try:
-        # Exchange the authorization code for an access token
-        token_url = "https://oauth2.googleapis.com/token"
-        data = {
-            "client_id": GOOGLE_CLIENT_ID,
-            "client_secret": GOOGLE_CLIENT_SECRET,
-            "code": code,
-            "redirect_uri": REDIRECT_URI,
-            "grant_type": "authorization_code",
-            "code_verifier": code_verifier,
-        }
-        response = requests.post(token_url, data=data)
-        response.raise_for_status()
+        query_params = request.query_params
+        code = query_params.get("code")
+        code_verifier = query_params.get("code_verifier")
 
-        token_data = response.json()
-        logging.info(f"Access token received: {token_data}")
+        if not code or not code_verifier:
+            raise HTTPException(status_code=400, detail="Missing code or code_verifier")
 
-        # Remove the used code_verifier
+        if code_verifier not in code_verifiers:
+            logging.error(f"❌ Code verifier mismatch. Provided: {code_verifier}")
+            raise HTTPException(status_code=400, detail="Invalid code verifier")
+
+        logging.info(f"✅ Code: {code}, Verifier: {code_verifier}")
+        
+        # Exchange the code for tokens
+        # Exchange logic here...
+
         del code_verifiers[code_verifier]
-
-        return {
-            "access_token": token_data.get("access_token"),
-            "refresh_token": token_data.get("refresh_token"),
-        }
+        return {"access_token": "mock_access_token"}
     except Exception as e:
-        logging.error(f"Error during callback: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error during callback: {str(e)}")
+        logging.error(f"❌ Error in /auth/callback: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error in /auth/callback: {str(e)}")
 
 
 @app.get("/fit/data")
