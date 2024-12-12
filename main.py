@@ -27,11 +27,12 @@ async def login():
     """Start the OAuth login process with PKCE"""
     # Generate a unique code_verifier and code_challenge
     code_verifier = secrets.token_urlsafe(64)
-    code_verifiers[code_verifier] = True
-
     code_challenge = base64.urlsafe_b64encode(
         hashlib.sha256(code_verifier.encode()).digest()
     ).rstrip(b"=").decode()
+
+    # Store the verifier temporarily
+    code_verifiers[code_verifier] = True
 
     # Build the authorization URL for Google
     params = {
@@ -73,7 +74,7 @@ async def callback(request: Request):
             "code_verifier": code_verifier,
         }
         response = requests.post(token_url, data=data)
-        response.raise_for_status()  # Raise an exception for non-200 status codes
+        response.raise_for_status()
 
         token_data = response.json()
         logging.info(f"Access token received: {token_data}")
@@ -81,7 +82,10 @@ async def callback(request: Request):
         # Remove the used code_verifier
         del code_verifiers[code_verifier]
 
-        return {"access_token": token_data.get("access_token"), "refresh_token": token_data.get("refresh_token")}
+        return {
+            "access_token": token_data.get("access_token"),
+            "refresh_token": token_data.get("refresh_token"),
+        }
     except Exception as e:
         logging.error(f"Error during callback: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error during callback: {str(e)}")
