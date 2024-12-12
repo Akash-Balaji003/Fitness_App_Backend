@@ -1,6 +1,9 @@
 import base64
+import hashlib
 from io import BytesIO
 import os
+import secrets
+from urllib.parse import urlencode
 from fastapi import FastAPI, HTTPException, Query, Request
 import logging
 from google_auth_oauthlib.flow import Flow
@@ -16,56 +19,60 @@ REDIRECT_URI = os.getenv("REDIRECT_URI")
 
 app = FastAPI()
 
-flow = Flow.from_client_config(
-    client_config={
-        "web": {
-            "client_id": "115771399305-4j6adddopq42g4bcg2f7n2ihe6g17jep.apps.googleusercontent.com",
-            "project_id": "srm-fitness",
-            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-            "token_uri": "https://oauth2.googleapis.com/token",
-            "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-            "client_secret": "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",
-            "redirect_uris": ["https://fitness-backend-server-gkdme7bxcng6g9cn.southeastasia-01.azurewebsites.net/auth/callback"]
-        }
-    },
-    scopes=["https://www.googleapis.com/auth/fitness.activity.read"]
-)
-
-
+code_verifiers = {}  # Store code verifiers temporarily
 
 @app.get("/auth/login")
 async def login():
-    """Start the OAuth login process"""
-    logging.info("Starting login process")
-    flow.redirect_uri = "https://fitness-backend-server-gkdme7bxcng6g9cn.southeastasia-01.azurewebsites.net/auth/callback"
-    authorization_url, state = flow.authorization_url(prompt='consent')
-    logging.info(f"Redirecting to: {authorization_url}")
-    return {"login_url": authorization_url}
+    """Start the OAuth login process with PKCE"""
+    # Generate a code verifier
+    code_verifier = secrets.token_urlsafe(128)
+    code_verifiers[code_verifier] = True
 
+    # Generate a code challenge
+    code_challenge = base64.urlsafe_b64encode(
+        hashlib.sha256(code_verifier.encode()).digest()
+    ).rstrip(b"=").decode()
+
+    # Build the authorization URL
+    params = {
+        "client_id": GOOGLE_CLIENT_ID,
+        "redirect_uri": REDIRECT_URI,
+        "response_type": "code",
+        "scope": "https://www.googleapis.com/auth/fitness.activity.read",
+        "code_challenge": code_challenge,
+        "code_challenge_method": "S256",
+        "access_type": "offline",
+        "prompt": "consent",
+    }
+    authorization_url = f"https://accounts.google.com/o/oauth2/auth?{urlencode(params)}"
+    return {"login_url": authorization_url, "code_verifier": code_verifier}
 
 @app.get("/auth/callback")
 async def callback(request: Request):
-    """Handle the callback from Google OAuth"""
-    try:
-        # Get authorization code from URL
-        code = request.query_params.get('code')
-        if not code:
-            raise HTTPException(status_code=400, detail="No code in callback URL")
-        
-        logging.info(f"Received authorization code: {code}")
-        
-        # Exchange authorization code for tokens
-        flow.fetch_token(code=code)
-        credentials = flow.credentials
+    """Handle the callback from Google"""
+    query_params = request.query_params
+    code = query_params.get("code")
+    code_verifier = query_params.get("code_verifier")
 
-        return {
-            "access_token": credentials.token,
-            "refresh_token": credentials.refresh_token,
-            "expires_in": credentials.expiry,
-        }
-    except Exception as e:
-        logging.error(f"Error in callback: {str(e)}")
-        raise HTTPException(status_code=400, detail=f"Error in callback: {str(e)}")
+    if not code or not code_verifier or code_verifier not in code_verifiers:
+        raise HTTPException(status_code=400, detail="Invalid code verifier or code")
+
+    # Exchange authorization code for access token
+    token_url = "https://oauth2.googleapis.com/token"
+    data = {
+        "client_id": GOOGLE_CLIENT_ID,
+        "client_secret": GOOGLE_CLIENT_SECRET,
+        "code": code,
+        "redirect_uri": REDIRECT_URI,
+        "grant_type": "authorization_code",
+        "code_verifier": code_verifier,
+    }
+    response = await request.client.post(token_url, data=data)
+    if response.status_code != 200:
+        raise HTTPException(status_code=response.status_code, detail="Token exchange failed")
+    token_data = response.json()
+
+    return {"access_token": token_data.get("access_token")}
 
 
 @app.get("/fit/data")
