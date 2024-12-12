@@ -37,6 +37,7 @@ flow = Flow.from_client_config(
 async def login():
     """Start the OAuth login process"""
     logging.info("Starting login process")
+    flow.redirect_uri = "https://fitness-backend-server-gkdme7bxcng6g9cn.southeastasia-01.azurewebsites.net/auth/callback"
     authorization_url, state = flow.authorization_url(prompt='consent')
     logging.info(f"Redirecting to: {authorization_url}")
     return {"login_url": authorization_url}
