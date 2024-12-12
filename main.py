@@ -9,6 +9,9 @@ import logging
 from google_auth_oauthlib.flow import Flow
 from google.oauth2.credentials import Credentials
 import requests
+import httpx
+from starlette.middleware.sessions import SessionMiddleware
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 from DB_Interface import login_user, register_user
@@ -19,36 +22,41 @@ REDIRECT_URI = os.getenv("REDIRECT_URI")
 
 app = FastAPI()
 
+app.add_middleware(SessionMiddleware, secret_key="supersecretkey123")
+
 code_verifiers = {}  # Store code verifiers temporarily
 
 
+
 @app.get("/auth/login")
-async def login():
+async def login(request: Request):
     """Start the OAuth login process and generate a code verifier."""
     try:
-        # Generate the code verifier and code challenge (for PKCE)
+        # Step 1: Generate the code_verifier and store it in the session
         code_verifier = secrets.token_urlsafe(64)
-        code_verifiers[code_verifier] = True  # Store for later validation
+        request.session['code_verifier'] = code_verifier  # Store in session
+
+        # Step 2: Create the code_challenge
         code_challenge = base64.urlsafe_b64encode(
             hashlib.sha256(code_verifier.encode()).digest()
         ).rstrip(b"=").decode()
 
-        # Google OAuth 2.0 URL with required parameters
+        # Step 3: Generate the Google OAuth login URL
         login_url = (
-            "https://accounts.google.com/o/oauth2/v2/auth"
-            f"?client_id={GOOGLE_CLIENT_ID}"
-            f"&redirect_uri={REDIRECT_URI}"
-            f"&response_type=code"
-            f"&scope=https://www.googleapis.com/auth/fitness.activity.read"
-            f"&code_challenge={code_challenge}"
-            f"&code_challenge_method=S256"
-            f"&access_type=offline"
+            f"https://accounts.google.com/o/oauth2/v2/auth?"
+            f"client_id={GOOGLE_CLIENT_ID}&"
+            f"redirect_uri={REDIRECT_URI}&"
+            f"response_type=code&"
+            f"scope=https://www.googleapis.com/auth/fitness.activity.read&"
+            f"code_challenge={code_challenge}&"
+            f"code_challenge_method=S256&"
+            f"access_type=offline"
         )
 
-        logging.info(f"Generated Code Verifier: {code_verifier}")
-        logging.info(f"Login URL: {login_url}")
+        logging.info(f"🔑 Generated Code Verifier: {code_verifier}")
+        logging.info(f"🔗 Login URL: {login_url}")
 
-        return {"login_url": login_url, "code_verifier": code_verifier}
+        return {"login_url": login_url}
     except Exception as e:
         logging.error(f"❌ Error in /auth/login: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error in /auth/login: {str(e)}")
@@ -58,58 +66,53 @@ async def login():
 async def callback(request: Request):
     """Handle the callback from Google and exchange code for tokens."""
     try:
-        # Log query params
+        # Step 1: Extract query params (code) and session data (code_verifier)
         query_params = request.query_params
-        logging.info(f"Query Params: {query_params}")
-        
         code = query_params.get("code")
-        code_verifier = query_params.get("code_verifier")
+        code_verifier = request.session.get('code_verifier')  # Get from session
 
         if not code or not code_verifier:
-            logging.error("❌ Missing 'code' or 'code_verifier'")
+            logging.error(f"❌ Missing 'code' or 'code_verifier'")
             raise HTTPException(status_code=400, detail="Missing code or code_verifier")
 
-        if code_verifier not in code_verifiers:
-            logging.error(f"❌ Code verifier mismatch. Provided: {code_verifier}")
-            logging.info(f"Available code verifiers: {list(code_verifiers.keys())}")
-            raise HTTPException(status_code=400, detail="Invalid code verifier")
-        
-        logging.info(f"✅ Code: {code}, Verifier: {code_verifier}")
+        logging.info(f"✅ Received Code: {code}")
+        logging.info(f"✅ Using Code Verifier: {code_verifier}")
 
-        # Exchange the authorization code for access and refresh tokens
-        token_url = "https://oauth2.googleapis.com/token"
+        # Step 2: Exchange the code for tokens
+        token_endpoint = "https://oauth2.googleapis.com/token"
+
         payload = {
             'client_id': GOOGLE_CLIENT_ID,
             'client_secret': GOOGLE_CLIENT_SECRET,
             'code': code,
-            'redirect_uri': REDIRECT_URI,
+            'code_verifier': code_verifier,
             'grant_type': 'authorization_code',
-            'code_verifier': code_verifier
+            'redirect_uri': REDIRECT_URI,
         }
-        
-        response = requests.post(token_url, data=payload)
-        
-        # Log response
-        logging.info(f"Google Token Response Status: {response.status_code}")
-        logging.info(f"Google Token Response Body: {response.json()}")
-        
+
+        headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+
+        async with httpx.AsyncClient() as client:
+            response = await client.post(token_endpoint, data=payload, headers=headers)
+
         if response.status_code != 200:
-            logging.error(f"❌ Error exchanging code: {response.json()}")
-            raise HTTPException(status_code=400, detail="Failed to exchange code for tokens")
+            logging.error(f"❌ Failed to exchange token: {response.json()}")
+            raise HTTPException(status_code=500, detail="Failed to exchange token with Google")
 
-        tokens = response.json()
-        logging.info(f"✅ Tokens received: {tokens}")
+        token_data = response.json()
+        access_token = token_data.get("access_token")
+        refresh_token = token_data.get("refresh_token")
 
-        # Store or return access token
-        access_token = tokens.get('access_token')
-        refresh_token = tokens.get('refresh_token')
+        logging.info(f"✅ Access Token: {access_token}")
+        logging.info(f"🔄 Refresh Token: {refresh_token}")
 
-        del code_verifiers[code_verifier]  # Remove used code verifier
+        # Remove code verifier from session
+        del request.session['code_verifier']
 
         return {
             "access_token": access_token,
             "refresh_token": refresh_token,
-            "expires_in": tokens.get('expires_in')
+            "expires_in": token_data.get("expires_in"),
         }
     except Exception as e:
         logging.error(f"❌ Error in /auth/callback: {str(e)}")
