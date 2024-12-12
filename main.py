@@ -19,13 +19,13 @@ app = FastAPI()
 flow = Flow.from_client_config(
     client_config={
         "web": {
-            "client_id": GOOGLE_CLIENT_ID,
-            "project_id": "your-project-id",
+            "client_id": "115771399305-4j6adddopq42g4bcg2f7n2ihe6g17jep.apps.googleusercontent.com",
+            "project_id": "srm-fitness",
             "auth_uri": "https://accounts.google.com/o/oauth2/auth",
             "token_uri": "https://oauth2.googleapis.com/token",
             "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-            "client_secret": GOOGLE_CLIENT_SECRET,
-            "redirect_uris": [REDIRECT_URI]
+            "client_secret": "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",
+            "redirect_uris": ["https://fitness-backend-server-gkdme7bxcng6g9cn.southeastasia-01.azurewebsites.net/auth/callback"]
         }
     },
     scopes=["https://www.googleapis.com/auth/fitness.activity.read"]
