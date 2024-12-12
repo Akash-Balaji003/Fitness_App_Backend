@@ -36,7 +36,7 @@ async def login():
         # Google OAuth 2.0 URL with required parameters
         login_url = (
             "https://accounts.google.com/o/oauth2/v2/auth"
-            f"?client_id={CLIENT_ID}"
+            f"?client_id={GOOGLE_CLIENT_ID}"
             f"&redirect_uri={REDIRECT_URI}"
             f"&response_type=code"
             f"&scope=https://www.googleapis.com/auth/fitness.activity.read"
@@ -74,8 +74,8 @@ async def callback(request: Request):
         # Exchange the authorization code for access and refresh tokens
         token_url = "https://oauth2.googleapis.com/token"
         payload = {
-            'client_id': CLIENT_ID,
-            'client_secret': CLIENT_SECRET,
+            'client_id': GOOGLE_CLIENT_ID,
+            'client_secret': GOOGLE_CLIENT_SECRET,
             'code': code,
             'redirect_uri': REDIRECT_URI,
             'grant_type': 'authorization_code',
