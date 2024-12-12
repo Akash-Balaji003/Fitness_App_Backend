@@ -21,18 +21,34 @@ app = FastAPI()
 
 code_verifiers = {}  # Store code verifiers temporarily
 
+
 @app.get("/auth/login")
 async def login():
     """Start the OAuth login process and generate a code verifier."""
     try:
+        # Generate the code verifier and code challenge (for PKCE)
         code_verifier = secrets.token_urlsafe(64)
-        code_verifiers[code_verifier] = True
+        code_verifiers[code_verifier] = True  # Store for later validation
         code_challenge = base64.urlsafe_b64encode(
             hashlib.sha256(code_verifier.encode()).digest()
         ).rstrip(b"=").decode()
-        
+
+        # Google OAuth 2.0 URL with required parameters
+        login_url = (
+            "https://accounts.google.com/o/oauth2/v2/auth"
+            f"?client_id={CLIENT_ID}"
+            f"&redirect_uri={REDIRECT_URI}"
+            f"&response_type=code"
+            f"&scope=https://www.googleapis.com/auth/fitness.activity.read"
+            f"&code_challenge={code_challenge}"
+            f"&code_challenge_method=S256"
+            f"&access_type=offline"
+        )
+
         logging.info(f"Generated Code Verifier: {code_verifier}")
-        return {"login_url": "your_google_oauth_url_here", "code_verifier": code_verifier}
+        logging.info(f"Login URL: {login_url}")
+
+        return {"login_url": login_url, "code_verifier": code_verifier}
     except Exception as e:
         logging.error(f"❌ Error in /auth/login: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error in /auth/login: {str(e)}")
@@ -40,7 +56,7 @@ async def login():
 
 @app.get("/auth/callback")
 async def callback(request: Request):
-    """Handle the callback from Google and exchange code for tokens."""
+    """Handle the callback from Google and exchange the code for access tokens."""
     try:
         query_params = request.query_params
         code = query_params.get("code")
@@ -55,11 +71,38 @@ async def callback(request: Request):
 
         logging.info(f"✅ Code: {code}, Verifier: {code_verifier}")
         
-        # Exchange the code for tokens
-        # Exchange logic here...
+        # Exchange the authorization code for access and refresh tokens
+        token_url = "https://oauth2.googleapis.com/token"
+        payload = {
+            'client_id': CLIENT_ID,
+            'client_secret': CLIENT_SECRET,
+            'code': code,
+            'redirect_uri': REDIRECT_URI,
+            'grant_type': 'authorization_code',
+            'code_verifier': code_verifier
+        }
+        
+        response = requests.post(token_url, data=payload)
+        
+        if response.status_code != 200:
+            logging.error(f"❌ Error exchanging code: {response.json()}")
+            raise HTTPException(status_code=400, detail="Failed to exchange code for tokens")
 
+        tokens = response.json()
+        logging.info(f"✅ Tokens received: {tokens}")
+
+        # Store or return access token
+        access_token = tokens.get('access_token')
+        refresh_token = tokens.get('refresh_token')
+
+        # Clean up to prevent reuse
         del code_verifiers[code_verifier]
-        return {"access_token": "mock_access_token"}
+
+        return {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "expires_in": tokens.get('expires_in')
+        }
     except Exception as e:
         logging.error(f"❌ Error in /auth/callback: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error in /auth/callback: {str(e)}")
