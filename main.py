@@ -56,21 +56,26 @@ async def login():
 
 @app.get("/auth/callback")
 async def callback(request: Request):
-    """Handle the callback from Google and exchange the code for access tokens."""
+    """Handle the callback from Google and exchange code for tokens."""
     try:
+        # Log query params
         query_params = request.query_params
+        logging.info(f"Query Params: {query_params}")
+        
         code = query_params.get("code")
         code_verifier = query_params.get("code_verifier")
 
         if not code or not code_verifier:
+            logging.error("❌ Missing 'code' or 'code_verifier'")
             raise HTTPException(status_code=400, detail="Missing code or code_verifier")
 
         if code_verifier not in code_verifiers:
             logging.error(f"❌ Code verifier mismatch. Provided: {code_verifier}")
+            logging.info(f"Available code verifiers: {list(code_verifiers.keys())}")
             raise HTTPException(status_code=400, detail="Invalid code verifier")
-
-        logging.info(f"✅ Code: {code}, Verifier: {code_verifier}")
         
+        logging.info(f"✅ Code: {code}, Verifier: {code_verifier}")
+
         # Exchange the authorization code for access and refresh tokens
         token_url = "https://oauth2.googleapis.com/token"
         payload = {
@@ -84,6 +89,10 @@ async def callback(request: Request):
         
         response = requests.post(token_url, data=payload)
         
+        # Log response
+        logging.info(f"Google Token Response Status: {response.status_code}")
+        logging.info(f"Google Token Response Body: {response.json()}")
+        
         if response.status_code != 200:
             logging.error(f"❌ Error exchanging code: {response.json()}")
             raise HTTPException(status_code=400, detail="Failed to exchange code for tokens")
@@ -95,8 +104,7 @@ async def callback(request: Request):
         access_token = tokens.get('access_token')
         refresh_token = tokens.get('refresh_token')
 
-        # Clean up to prevent reuse
-        del code_verifiers[code_verifier]
+        del code_verifiers[code_verifier]  # Remove used code verifier
 
         return {
             "access_token": access_token,
@@ -106,6 +114,7 @@ async def callback(request: Request):
     except Exception as e:
         logging.error(f"❌ Error in /auth/callback: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error in /auth/callback: {str(e)}")
+
 
 
 @app.get("/fit/data")
