@@ -145,8 +145,9 @@ async def get_token(id: int):
 @app.get("/fit/data")
 async def get_google_fit_data(access_token: str):
     """Fetch Google Fit data"""
-    start_time = int(datetime(2024, 12, 14, 0, 0, 0, tzinfo=timezone.utc).timestamp() * 1000)
-    end_time = int(datetime(2024, 12, 15, 0, 0, 0, tzinfo=timezone.utc).timestamp() * 1000)
+    start_time = 1733625561000
+    end_time = 1733711961000
+
     print(start_time, end_time)
     try:
         logging.info("Access Token: %s", access_token)
