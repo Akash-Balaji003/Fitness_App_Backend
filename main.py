@@ -9,9 +9,9 @@ import logging
 from fastapi.responses import RedirectResponse
 from google.auth.transport.requests import Request as GoogleRequest
 from google.oauth2.credentials import Credentials
-import httpx
 import requests
 from starlette.middleware.sessions import SessionMiddleware
+from datetime import datetime, timezone
 from dotenv import load_dotenv
 
 from DB_Interface import get_access_token, get_code_verifier, insert_code_verifier, insert_tokens, login_user, register_user
@@ -145,8 +145,8 @@ async def get_token(id: int):
 @app.get("/fit/data")
 async def get_google_fit_data(access_token: str):
     """Fetch Google Fit data"""
-    start_time = int(datetime(2024, 12, 14, 0, 0, 0, tzinfo=datetime.timezone.utc).timestamp() * 1000)
-    end_time = int(datetime(2024, 12, 15, 0, 0, 0, tzinfo=datetime.timezone.utc).timestamp() * 1000)
+    start_time = int(datetime(2024, 12, 14, 0, 0, 0, tzinfo=timezone.utc).timestamp() * 1000)
+    end_time = int(datetime(2024, 12, 15, 0, 0, 0, tzinfo=timezone.utc).timestamp() * 1000)
     print(start_time, end_time)
     try:
         logging.info("Access Token: %s", access_token)
