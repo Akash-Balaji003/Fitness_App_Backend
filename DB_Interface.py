@@ -100,7 +100,7 @@ def insert_code_verifier(code_verifier: str):
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
-            sql = "INSERT INTO oauth_verifiers (code_verifier) VALUES (%s)"
+            sql = "INSERT INTO codes (code_verifier) VALUES (%s)"
             cursor.execute(sql, (code_verifier,))
             connection.commit()
             logging.info(f"Stored code_verifier in DB: {code_verifier}")
@@ -112,7 +112,7 @@ def get_code_verifier() -> str:
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
-            sql = "SELECT code_verifier FROM oauth_verifiers ORDER BY created_at DESC LIMIT 1"
+            sql = "SELECT code_verifier FROM cides ORDER BY created_at DESC LIMIT 1"
             cursor.execute(sql)
             result = cursor.fetchone()
             if result:
