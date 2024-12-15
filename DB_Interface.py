@@ -112,7 +112,7 @@ def get_code_verifier() -> str:
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
-            sql = "SELECT code_verifier FROM cides ORDER BY created_at DESC LIMIT 1"
+            sql = "SELECT code_verifier FROM codes ORDER BY created_at DESC LIMIT 1"
             cursor.execute(sql)
             result = cursor.fetchone()
             if result:
