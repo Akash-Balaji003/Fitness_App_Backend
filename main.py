@@ -1,5 +1,4 @@
 import base64
-import datetime
 import hashlib
 import json
 import os
@@ -11,7 +10,6 @@ from google.auth.transport.requests import Request as GoogleRequest
 from google.oauth2.credentials import Credentials
 import requests
 from starlette.middleware.sessions import SessionMiddleware
-from datetime import datetime, timezone
 from dotenv import load_dotenv
 
 from DB_Interface import get_access_token, get_code_verifier, insert_code_verifier, insert_tokens, login_user, register_user
