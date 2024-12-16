@@ -128,12 +128,8 @@ def insert_tokens(user_id: int, access_token: str, refresh_token: str):
         with connection.cursor() as cursor:
             # Prepare SQL query to insert access_token and refresh_token
             sql = """
-                UPDATE users 
-                SET 
-                    access_token = %s,
-                    refresh_token = %s,
-                    updated_at = %s
-                WHERE user_id = %s;
+                INSERT INTO user_tokens (user_id, access_token, refresh_token, created_at, updated_at)
+                VALUES (%s, %s, %s, %s, %s)
             """
             now = datetime.now()
             cursor.execute(sql, (user_id, access_token, refresh_token, now, now))
