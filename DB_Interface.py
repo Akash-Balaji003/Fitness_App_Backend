@@ -143,7 +143,7 @@ def get_access_token(user_id: int):
     try:
         with connection.cursor() as cursor:
             # Prepare SQL query to fetch the access token for the given user_id
-            sql = "SELECT access_token FROM users WHERE user_id = %s"
+            sql = "SELECT access_token FROM user_tokens WHERE user_id = %s"
             cursor.execute(sql, (user_id,))
             result = cursor.fetchone()
             
@@ -160,7 +160,7 @@ def get_refresh_token(user_id: int):
     try:
         with connection.cursor() as cursor:
             # Prepare SQL query to fetch the refresh token for the given user_id
-            sql = "SELECT refresh_token FROM users WHERE user_id = %s"
+            sql = "SELECT refresh_token FROM user_tokens WHERE user_id = %s"
             cursor.execute(sql, (user_id,))
             result = cursor.fetchone()
             
