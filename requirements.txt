@@ -8,4 +8,4 @@ google-auth==2.23.3
 google-auth-oauthlib==1.0.0
 python-dotenv==1.0.0
 httpx==0.25.1
-starlette==0.31.0
+starlette==0.27.0
