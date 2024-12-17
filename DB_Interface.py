@@ -38,14 +38,6 @@ def update_steps(step_data: dict):
             step_data['steps'], 
         ))
         connection.commit()
-    
-        # Insert or update steps for a user on a specific date
-        query = """
-        INSERT INTO Steps (user_id, date, steps)
-        VALUES (%s, %s, %s)
-        ON DUPLICATE KEY UPDATE steps = VALUES(steps), updated_at = CURRENT_TIMESTAMP;
-        """
-        connection.commit()
 
     except mysql.connector.Error as err:
         connection.rollback()
