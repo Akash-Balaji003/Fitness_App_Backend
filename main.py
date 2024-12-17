@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Request
 import logging
 
-from DB_Interface import login_user, register_user
+from DB_Interface import login_user, register_user, update_steps
 
 app = FastAPI()
 
@@ -26,7 +26,7 @@ async def login(request: Request):
     return response
 
 @app.post("/update-steps")
-async def update_steps(request: Request):
+async def stepCount(request: Request):
     step_data = await request.json()
     update_steps(step_data)
     return {"status": "success", "message": "Steps updated successfully"}
