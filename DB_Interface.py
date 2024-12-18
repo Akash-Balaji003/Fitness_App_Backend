@@ -20,7 +20,6 @@ def get_db_connection():
 
     )
 
-
 def update_steps(step_data: dict):
     connection = get_db_connection()
     cursor = connection.cursor()
@@ -121,6 +120,37 @@ def login_user(user_data: dict):
     except mysql.connector.Error as err:
         raise HTTPException(status_code=500, detail=f"Error: {err}")
     
+    finally:
+        cursor.close()
+        connection.close()
+
+def get_weekly_statistics(user_id: int):
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+    try:
+        cursor.execute("""
+            SELECT 
+                DATE(date) AS day,
+                SUM(steps) AS total_steps
+            FROM Steps
+            WHERE 
+                user_id = %s AND 
+                date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+            GROUP BY day
+            ORDER BY day ASC;
+        """, (user_id,))
+        weekly_data = cursor.fetchall()
+
+        # Format data for the frontend
+        labels = [entry['day'].strftime('%a') for entry in weekly_data]  # Days of the week (e.g., Mon, Tue)
+        steps = [entry['total_steps'] for entry in weekly_data]
+
+        return {
+            "labels": labels,
+            "steps": steps,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching weekly statistics: {str(e)}")
     finally:
         cursor.close()
         connection.close()

@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Request
 import logging
 
-from DB_Interface import login_user, register_user, update_steps
+from DB_Interface import get_weekly_statistics, login_user, register_user, update_steps
 
 app = FastAPI()
 
@@ -34,3 +34,7 @@ async def stepCount(request: Request):
 @app.get("/test")
 async def test():
     return {"Test": "Working"}
+
+@app.get("/weekly-steps")
+async def weeklySteps(id: int):
+    return get_weekly_statistics(id)
