@@ -89,7 +89,7 @@ def login_user(user_data: dict):
     try:
         # Check if user exists and retrieve details
         query = """
-            SELECT user_id, password, username, phone_number, diet, height, weight, email
+            SELECT user_id, password, username, phone_number, diet, height, weight, email, gender, experience, stepgoal
             FROM Users
             WHERE phone_number = %s
         """
@@ -114,7 +114,10 @@ def login_user(user_data: dict):
             "diet": db_user['diet'],
             "height": db_user['height'],
             "weight": db_user['weight'],
-            "email": db_user['email']
+            "email": db_user['email'],
+            "gender": db_user['gender'],
+            "experience": db_user['experience'],
+            "stepgoal": db_user['stepgoal']
         }
 
     except mysql.connector.Error as err:
