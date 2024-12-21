@@ -183,3 +183,25 @@ def insert_activity_data(activity_data: dict):
     finally:
         cursor.close()
         connection.close()
+
+def fetch_activities(user_id: int):
+    connection = get_db_connection()  # Replace with your DB connection function
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        # Fetch activities for a specific user_id
+        query = """SELECT activity_id, activity, duration 
+                   FROM activities 
+                   WHERE user_id = %s"""
+        cursor.execute(query, (user_id,))
+        activities = cursor.fetchall()
+
+        return activities
+
+    except mysql.connector.Error as err:
+        print("Database error:", err)  # Debugging
+        raise HTTPException(status_code=400, detail=f"Database error: {err}")
+
+    finally:
+        cursor.close()
+        connection.close()
