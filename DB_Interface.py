@@ -157,3 +157,29 @@ def get_weekly_statistics(user_id: int):
     finally:
         cursor.close()
         connection.close()
+
+def insert_activity_data(activity_data: dict):
+    connection = get_db_connection()  # Replace with your DB connection function
+    cursor = connection.cursor()
+
+    try:
+        # Insert into activities table
+        query_activities = """INSERT INTO activities (
+                                activity, duration, user_id
+                              ) VALUES (%s, %s, %s)"""
+        cursor.execute(query_activities, (
+            activity_data['activity'],
+            activity_data['duration'],
+            activity_data['user_id']
+        ))
+        
+        connection.commit()
+
+    except mysql.connector.Error as err:
+        connection.rollback()
+        print("Database error:", err)  # Debugging
+        raise HTTPException(status_code=400, detail=f"Database error: {err}")
+
+    finally:
+        cursor.close()
+        connection.close()
