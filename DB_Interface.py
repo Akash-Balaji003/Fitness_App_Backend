@@ -205,3 +205,40 @@ def fetch_activities(user_id: int):
     finally:
         cursor.close()
         connection.close()
+
+def update_user(user_data: dict):
+    connection = get_db_connection()
+    cursor = connection.cursor()
+
+    try:
+        # Update the Users table with the provided data
+        query = """
+        UPDATE Users
+        SET 
+            height = %s,
+            weight = %s,
+            diet = %s,
+            experience = %s,
+            stepgoal = %s
+        WHERE user_id = %s
+        """
+        cursor.execute(query, (
+            user_data['height'],
+            user_data['weight'],
+            user_data['diet'],
+            user_data['experience'],
+            user_data['stepgoal'],
+            user_data['user_id']  # Using user_id as the identifier
+        ))
+
+        connection.commit()
+        return {"message": "Updated the user data successfully"}
+    
+    except mysql.connector.Error as err:
+        connection.rollback()
+        print("Database error:", err)  # Debugging
+        raise HTTPException(status_code=400, detail=f"Database error: {err}")
+    
+    finally:
+        cursor.close()
+        connection.close()

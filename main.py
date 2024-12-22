@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Request
 import logging
 
-from DB_Interface import fetch_activities, get_weekly_statistics, insert_activity_data, login_user, register_user, update_steps
+from DB_Interface import fetch_activities, get_weekly_statistics, insert_activity_data, login_user, register_user, update_steps, update_user
 
 app = FastAPI()
 
@@ -53,3 +53,17 @@ async def register(request: Request):
 @app.get("/fetch-activities")
 async def getActivites(id: int):
     return fetch_activities(id)
+
+@app.post("/update-user")
+async def update_profile_endpoint(request: Request):
+    try:
+        user_data = await request.json()
+        logging.info("Received profile data:", user_data)  # Debugging
+        
+        result = update_user(user_data)
+        
+        return result
+    
+    except Exception as e:
+        logging.error("Error:", str(e))  # Debugging
+        raise HTTPException(status_code=400, detail=f"Bad request: {str(e)}")
