@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Request
 import logging
 
-from DB_Interface import fetch_activities, get_weekly_statistics, insert_activity_data, list_friends, login_user, register_user, respond_friend_request, send_friend_request, update_steps, update_user
+from DB_Interface import fetch_activities, get_pending_friend_requests, get_weekly_statistics, insert_activity_data, list_friends, login_user, register_user, respond_friend_request, send_friend_request, update_steps, update_user
 
 app = FastAPI()
 
@@ -79,3 +79,7 @@ async def sendRequest(req_id: int, rec_id: int):
 @app.get("/respond-request")
 async def respondRequest(id: int, status: str):
     return respond_friend_request(id, status)
+
+@app.get("/get-pending-requests")
+async def getPending(id: int):
+    return get_pending_friend_requests(id)

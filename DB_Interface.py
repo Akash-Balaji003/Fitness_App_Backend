@@ -330,3 +330,31 @@ def list_friends(user_id: int):
     finally:
         cursor.close()
         connection.close()
+
+def get_pending_friend_requests(user_id: int):
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        # Fetch pending friend requests where the user is the recipient
+        query = """
+        SELECT friendships.id AS friendship_id, 
+               users.id AS requester_id, 
+               users.name AS requester_name, 
+               users.email AS requester_email
+        FROM friendships
+        JOIN users ON users.id = friendships.requester_id
+        WHERE friendships.recipient_id = %s AND friendships.status = 'pending'
+        """
+        cursor.execute(query, (user_id,))
+        pending_requests = cursor.fetchall()
+
+        return pending_requests
+
+    except mysql.connector.Error as err:
+        print("Database error:", err)
+        raise HTTPException(status_code=400, detail=f"Database error: {err}")
+
+    finally:
+        cursor.close()
+        connection.close()
