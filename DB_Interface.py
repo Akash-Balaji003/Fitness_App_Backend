@@ -242,3 +242,91 @@ def update_user(user_data: dict):
     finally:
         cursor.close()
         connection.close()
+
+def send_friend_request(requester_id: int, recipient_id: int):
+    connection = get_db_connection()
+    cursor = connection.cursor()
+
+    try:
+        # Check if a friend request already exists
+        query_check = """
+        SELECT * FROM friendships 
+        WHERE requester_id = %s AND recipient_id = %s
+        """
+        cursor.execute(query_check, (requester_id, recipient_id))
+        if cursor.fetchone():
+            raise HTTPException(status_code=400, detail="Friend request already sent.")
+
+        # Insert the friend request
+        query_insert = """
+        INSERT INTO friendships (requester_id, recipient_id, status)
+        VALUES (%s, %s, 'pending')
+        """
+        cursor.execute(query_insert, (requester_id, recipient_id))
+        connection.commit()
+
+        return {"message": "Friend request sent successfully!"}
+    
+    except mysql.connector.Error as err:
+        connection.rollback()
+        print("Database error:", err)
+        raise HTTPException(status_code=400, detail=f"Database error: {err}")
+    
+    finally:
+        cursor.close()
+        connection.close()
+
+def respond_friend_request(friendship_id: int, status: str):
+    connection = get_db_connection()
+    cursor = connection.cursor()
+
+    try:
+        if status not in ["accepted", "rejected"]:
+            raise HTTPException(status_code=400, detail="Invalid status.")
+
+        # Update the friendship status
+        query_update = """
+        UPDATE friendships 
+        SET status = %s 
+        WHERE friend_id = %s
+        """
+        cursor.execute(query_update, (status, friendship_id))
+        connection.commit()
+
+        return {"message": f"Friend request {status} successfully!"}
+    
+    except mysql.connector.Error as err:
+        connection.rollback()
+        print("Database error:", err)
+        raise HTTPException(status_code=400, detail=f"Database error: {err}")
+    
+    finally:
+        cursor.close()
+        connection.close()
+
+def list_friends(user_id: int):
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        # Fetch friends for the given user ID
+        query = """
+        SELECT users.user_id, users.username
+        FROM friendships
+        JOIN users ON 
+            (users.user_id = friendships.requester_id AND friendships.recipient_id = %s) OR
+            (users.user_id = friendships.recipient_id AND friendships.requester_id = %s)
+        WHERE friendships.status = 'accepted'
+        """
+        cursor.execute(query, (user_id, user_id))
+        friends = cursor.fetchall()
+
+        return friends
+    
+    except mysql.connector.Error as err:
+        print("Database error:", err)
+        raise HTTPException(status_code=400, detail=f"Database error: {err}")
+    
+    finally:
+        cursor.close()
+        connection.close()

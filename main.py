@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Request
 import logging
 
-from DB_Interface import fetch_activities, get_weekly_statistics, insert_activity_data, login_user, register_user, update_steps, update_user
+from DB_Interface import fetch_activities, get_weekly_statistics, insert_activity_data, list_friends, login_user, register_user, respond_friend_request, send_friend_request, update_steps, update_user
 
 app = FastAPI()
 
@@ -67,3 +67,15 @@ async def update_profile_endpoint(request: Request):
     except Exception as e:
         logging.error("Error:", str(e))  # Debugging
         raise HTTPException(status_code=400, detail=f"Bad request: {str(e)}")
+
+@app.get("/get-friends")
+async def friendList(id: int):
+    return list_friends(id)
+
+@app.get("/send-request")
+async def sendRequest(req_id: int, rec_id: int):
+    return send_friend_request(req_id, rec_id)
+
+@app.get("/respond-request")
+async def respondRequest(id: int, status: str):
+    return respond_friend_request(id, status)
