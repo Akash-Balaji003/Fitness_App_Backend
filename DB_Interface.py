@@ -338,7 +338,7 @@ def get_pending_friend_requests(user_id: int):
     try:
         # Fetch pending friend requests where the user is the recipient
         query = """
-        SELECT friendships.id AS friendship_id, 
+        SELECT friendships.friend_id AS friendship_id, 
                users.user_id AS requester_id, 
                users.username AS requester_name, 
                users.email AS requester_email
