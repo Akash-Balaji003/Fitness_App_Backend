@@ -403,7 +403,7 @@ def search_users_by_name(name: str):
         query = """
         SELECT user_id, username
         FROM users
-        WHERE name LIKE %s
+        WHERE username LIKE %s
         """
         
         cursor.execute(query, (f"%{name}%",))  # Perform case-insensitive search using LIKE
