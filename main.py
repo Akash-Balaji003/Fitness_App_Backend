@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Request
 import logging
 
-from DB_Interface import fetch_activities, get_pending_friend_requests, get_weekly_statistics, insert_activity_data, leaderboard_data, list_friends, login_user, register_user, respond_friend_request, search_users_by_name, send_friend_request, update_steps, update_user
+from DB_Interface import check_account, fetch_activities, get_pending_friend_requests, get_weekly_statistics, insert_activity_data, leaderboard_data, list_friends, login_user, register_user, respond_friend_request, search_users_by_name, send_friend_request, update_steps, update_user
 
 app = FastAPI()
 
@@ -95,3 +95,15 @@ def search_users(name: str):
         return users
     except Exception as err:
         raise HTTPException(status_code=500, detail=f"Error searching users: {err}")
+
+@app.post("/check-user")
+async def checkAccount(request: Request):
+    try:
+        user_data = await request.json()
+        logging.info("Received profile data:", user_data)  # Debugging
+        result = check_account(user_data)
+        return result
+    
+    except Exception as e:
+        logging.error("Error:", str(e))  # Debugging
+        raise HTTPException(status_code=400, detail=f"Bad request: {str(e)}")

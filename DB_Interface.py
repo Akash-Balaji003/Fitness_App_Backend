@@ -332,9 +332,6 @@ def list_friends(user_id: int):
         cursor.close()
         connection.close()
 
-import mysql.connector
-from fastapi import HTTPException
-
 def leaderboard_data(user_id: int):
     connection = get_db_connection()
     cursor = connection.cursor(dictionary=True)
@@ -386,7 +383,6 @@ def leaderboard_data(user_id: int):
         cursor.close()
         connection.close()
 
-
 def get_pending_friend_requests(user_id: int):
     connection = get_db_connection()
     cursor = connection.cursor(dictionary=True)
@@ -434,6 +430,37 @@ def search_users_by_name(name: str):
     
     except mysql.connector.Error as err:
         print("Database error:", err)
+        raise HTTPException(status_code=400, detail=f"Database error: {err}")
+    
+    finally:
+        cursor.close()
+        connection.close()
+
+def check_account(user_data: dict):
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        # Check for existing account based on phone number or email
+        query = """
+        SELECT phone_number, email
+        FROM Users
+        WHERE phone_number = %s OR email = %s
+        """
+        cursor.execute(query, (
+            user_data['phone_number'],
+            user_data['email']
+        ))
+        
+        existing_user = cursor.fetchone()
+
+        if existing_user:
+            return {"message": "This number or email already has an account"}
+
+        return {"message": "No account exists with the provided phone number or email."}
+    
+    except mysql.connector.Error as err:
+        print("Database error:", err)  # Debugging
         raise HTTPException(status_code=400, detail=f"Database error: {err}")
     
     finally:
