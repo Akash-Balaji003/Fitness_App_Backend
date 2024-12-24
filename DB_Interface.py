@@ -342,7 +342,7 @@ def leaderboard_data(user_id: int):
         SELECT 
             users.user_id, 
             users.username, 
-            COALESCE(steps.step_count, 0) AS step_count
+            COALESCE(steps.steps, 0) AS step_count
         FROM friendships
         JOIN users 
             ON (users.user_id = friendships.requester_id AND friendships.recipient_id = %s) 
