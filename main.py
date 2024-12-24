@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Request
 import logging
 
-from DB_Interface import fetch_activities, get_pending_friend_requests, get_weekly_statistics, insert_activity_data, leaderboard_data, list_friends, login_user, register_user, respond_friend_request, send_friend_request, update_steps, update_user
+from DB_Interface import fetch_activities, get_pending_friend_requests, get_weekly_statistics, insert_activity_data, leaderboard_data, list_friends, login_user, register_user, respond_friend_request, search_users_by_name, send_friend_request, update_steps, update_user
 
 app = FastAPI()
 
@@ -87,3 +87,11 @@ async def getPending(id: int):
 @app.get("/get-leaderboard")
 async def leaderboardData(id: int):
     return leaderboard_data(id)
+
+@app.get("/users/search/")
+def search_users(name: str):
+    try:
+        users = search_users_by_name(name)  # Call the function to search users by name
+        return users
+    except Exception as err:
+        raise HTTPException(status_code=500, detail=f"Error searching users: {err}")

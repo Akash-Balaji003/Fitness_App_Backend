@@ -393,3 +393,28 @@ def get_pending_friend_requests(user_id: int):
     finally:
         cursor.close()
         connection.close()
+
+def search_users_by_name(name: str):
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        # Query to search for users whose names match the search query
+        query = """
+        SELECT user_id, username
+        FROM users
+        WHERE name LIKE %s
+        """
+        
+        cursor.execute(query, (f"%{name}%",))  # Perform case-insensitive search using LIKE
+        users = cursor.fetchall()
+
+        return users
+    
+    except mysql.connector.Error as err:
+        print("Database error:", err)
+        raise HTTPException(status_code=400, detail=f"Database error: {err}")
+    
+    finally:
+        cursor.close()
+        connection.close()
