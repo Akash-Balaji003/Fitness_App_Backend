@@ -332,6 +332,9 @@ def list_friends(user_id: int):
         cursor.close()
         connection.close()
 
+import mysql.connector
+from fastapi import HTTPException
+
 def leaderboard_data(user_id: int):
     connection = get_db_connection()
     cursor = connection.cursor(dictionary=True)
@@ -351,12 +354,29 @@ def leaderboard_data(user_id: int):
             ON steps.user_id = users.user_id 
             AND steps.date = CURDATE() - INTERVAL 1 DAY
         WHERE friendships.status = 'accepted'
+
+        UNION ALL
+
+        SELECT 
+            %s AS user_id, 
+            users.username, 
+            COALESCE(steps.steps, 0) AS step_count
+        FROM users
+        LEFT JOIN steps
+            ON steps.user_id = users.user_id 
+            AND steps.date = CURDATE() - INTERVAL 1 DAY
+        WHERE users.user_id = %s
         """
         
-        cursor.execute(query, (user_id, user_id))
-        friends = cursor.fetchall()
+        cursor.execute(query, (user_id, user_id, user_id, user_id))
+        leaderboard = cursor.fetchall()
 
-        return friends
+        # Update the username for the current user
+        for entry in leaderboard:
+            if entry['user_id'] == user_id:
+                entry['username'] = 'You'
+
+        return leaderboard
     
     except mysql.connector.Error as err:
         print("Database error:", err)
@@ -365,6 +385,7 @@ def leaderboard_data(user_id: int):
     finally:
         cursor.close()
         connection.close()
+
 
 def get_pending_friend_requests(user_id: int):
     connection = get_db_connection()
