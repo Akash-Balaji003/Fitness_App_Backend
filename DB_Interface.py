@@ -349,7 +349,7 @@ def leaderboard_data(user_id: int):
             OR (users.user_id = friendships.recipient_id AND friendships.requester_id = %s)
         LEFT JOIN steps 
             ON steps.user_id = users.user_id 
-            AND steps.date = CURDATE() - INTERVAL 2 DAY
+            AND steps.date = CURDATE() - INTERVAL 1 DAY
         WHERE friendships.status = 'accepted'
         """
         
