@@ -309,22 +309,50 @@ def list_friends(user_id: int):
     cursor = connection.cursor(dictionary=True)
 
     try:
+        # Fetch friends for the given user ID
+        query = """
+        SELECT users.user_id, users.username
+        FROM friendships
+        JOIN users ON 
+            (users.user_id = friendships.requester_id AND friendships.recipient_id = %s) OR
+            (users.user_id = friendships.recipient_id AND friendships.requester_id = %s)
+        WHERE friendships.status = 'accepted'
+        """
+        
+        cursor.execute(query, (user_id, user_id))
+        friends = cursor.fetchall()
+
+        return friends
+    
+    except mysql.connector.Error as err:
+        print("Database error:", err)
+        raise HTTPException(status_code=400, detail=f"Database error: {err}")
+    
+    finally:
+        cursor.close()
+        connection.close()
+
+def leaderboard_data(user_id: int):
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    try:
         # Fetch friends and their step count for the previous day
         query = """
-                SELECT 
-                    users.user_id, 
-                    users.username, 
-                    COALESCE(steps.step_count, 0) AS step_count
-                FROM friendships
-                JOIN users 
-                    ON (users.user_id = friendships.requester_id AND friendships.recipient_id = %s) 
-                    OR (users.user_id = friendships.recipient_id AND friendships.requester_id = %s)
-                LEFT JOIN steps 
-                    ON steps.user_id = users.user_id 
-                    AND steps.date = CURDATE() - INTERVAL 1 DAY
-                WHERE friendships.status = 'accepted'
-                """
-
+        SELECT 
+            users.user_id, 
+            users.username, 
+            COALESCE(steps.step_count, 0) AS step_count
+        FROM friendships
+        JOIN users 
+            ON (users.user_id = friendships.requester_id AND friendships.recipient_id = %s) 
+            OR (users.user_id = friendships.recipient_id AND friendships.requester_id = %s)
+        LEFT JOIN steps 
+            ON steps.user_id = users.user_id 
+            AND steps.date = CURDATE() - INTERVAL 1 DAY
+        WHERE friendships.status = 'accepted'
+        """
+        
         cursor.execute(query, (user_id, user_id))
         friends = cursor.fetchall()
 
