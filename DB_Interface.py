@@ -311,7 +311,7 @@ def list_friends(user_id: int):
     try:
         # Fetch friends for the given user ID
         query = """
-        SELECT users.user_id, users.username
+        SELECT users.user_id, users.username, friend_id
         FROM friendships
         JOIN users ON 
             (users.user_id = friendships.requester_id AND friendships.recipient_id = %s) OR
