@@ -322,6 +322,8 @@ def list_friends(user_id: int):
         cursor.execute(query, (user_id, user_id))
         friends = cursor.fetchall()
 
+        print (friends)
+        
         return friends
     
     except mysql.connector.Error as err:
@@ -466,3 +468,5 @@ def check_account(user_data: dict):
     finally:
         cursor.close()
         connection.close()
+
+list_friends(2)
