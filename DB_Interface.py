@@ -248,6 +248,19 @@ def send_friend_request(requester_id: int, recipient_id: int):
     cursor = connection.cursor()
 
     try:
+        # Check if a reciprocal friend request exists
+        query_check_reciprocal = """
+        SELECT status FROM friendships 
+        WHERE requester_id = %s AND recipient_id = %s
+        """
+        cursor.execute(query_check_reciprocal, (recipient_id, requester_id))
+        reciprocal_result = cursor.fetchone()
+
+        if reciprocal_result:
+            reciprocal_status = reciprocal_result[0]
+            if reciprocal_status == "pending":
+                raise HTTPException(status_code=400, detail="This user has already sent you a friend request.")
+
         # Check if a friend request already exists
         query_check = """
         SELECT status FROM friendships 
