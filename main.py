@@ -29,7 +29,7 @@ async def login(request: Request):
 async def stepCount(request: Request):
     step_data = await request.json()
     update_steps(step_data)
-    logging.info("Updated step data: ", step_data)  # Debugging
+    logging.info("Updated step data: %s", step_data)  # Debugging
     return {"status": "success", "message": "Steps updated successfully"}
 
 @app.get("/test")
@@ -54,6 +54,7 @@ async def register(request: Request):
 
 @app.get("/fetch-activities")
 async def getActivites(id: int):
+    logging.info("Get Activities for ID: %s", id)  # Debugging with proper formatting
     return fetch_activities(id)
 
 @app.post("/update-user")
@@ -72,7 +73,7 @@ async def update_profile_endpoint(request: Request):
 
 @app.get("/get-friends")
 async def friendList(id: int):
-    logging.info("Get Friends for ID : ", id)  # Debugging
+    logging.info("Get Friends for ID: %s", id)  # Debugging with proper formatting
     return list_friends(id)
 
 @app.get("/send-request")
