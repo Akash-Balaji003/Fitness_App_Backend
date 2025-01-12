@@ -250,22 +250,37 @@ def send_friend_request(requester_id: int, recipient_id: int):
     try:
         # Check if a friend request already exists
         query_check = """
-        SELECT * FROM friendships 
+        SELECT status FROM friendships 
         WHERE requester_id = %s AND recipient_id = %s
         """
         cursor.execute(query_check, (requester_id, recipient_id))
-        if cursor.fetchone():
-            raise HTTPException(status_code=400, detail="Friend request already sent.")
+        result = cursor.fetchone()
 
-        # Insert the friend request
-        query_insert = """
-        INSERT INTO friendships (requester_id, recipient_id, status)
-        VALUES (%s, %s, 'pending')
-        """
-        cursor.execute(query_insert, (requester_id, recipient_id))
-        connection.commit()
-
-        return {"message": "Friend request sent successfully!"}
+        if result:
+            status = result[0]
+            if status == "pending":
+                raise HTTPException(status_code=400, detail="Friend request already sent.")
+            elif status == "accepted":
+                raise HTTPException(status_code=400, detail="You are already friends.")
+            elif status == "rejected":
+                # Update the status to pending
+                query_update = """
+                UPDATE friendships 
+                SET status = 'pending'
+                WHERE requester_id = %s AND recipient_id = %s
+                """
+                cursor.execute(query_update, (requester_id, recipient_id))
+                connection.commit()
+                return {"message": "Friend request sent successfully!"}
+        else:
+            # Insert a new friend request
+            query_insert = """
+            INSERT INTO friendships (requester_id, recipient_id, status)
+            VALUES (%s, %s, 'pending')
+            """
+            cursor.execute(query_insert, (requester_id, recipient_id))
+            connection.commit()
+            return {"message": "Friend request sent successfully!"}
     
     except mysql.connector.Error as err:
         connection.rollback()
@@ -468,5 +483,3 @@ def check_account(user_data: dict):
     finally:
         cursor.close()
         connection.close()
-
-list_friends(2)
