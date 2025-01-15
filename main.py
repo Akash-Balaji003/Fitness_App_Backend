@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Request
 import logging
 
-from DB_Interface import check_account, fetch_activities, get_pending_friend_requests, get_user_monthly_steps, get_weekly_statistics, insert_activity_data, leaderboard_data, list_friends, login_user, register_user, respond_friend_request, search_users_by_name, send_friend_request, update_steps, update_user
+from DB_Interface import check_account, fetch_activities, get_longest_streak, get_pending_friend_requests, get_user_monthly_steps, get_weekly_statistics, insert_activity_data, leaderboard_data, list_friends, login_user, register_user, respond_friend_request, search_users_by_name, send_friend_request, update_steps, update_user
 
 app = FastAPI()
 
@@ -145,3 +145,8 @@ async def get_monthly_steps(id: int):
         raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail="An unexpected error occurred.")
+
+@app.get("/get-streaks")
+async def Streaks(id: int):
+    logging.info("Get Streaks for ID: %s", id)  # Debugging with proper formatting
+    return get_longest_streak(id)

@@ -533,8 +533,52 @@ def get_user_monthly_steps(user_id: int):
             for item in steps_data
         ]
 
-        print (formatted_data)
         return formatted_data
+
+    except mysql.connector.Error as err:
+        print("Database error:", err)  # Debugging
+        raise HTTPException(status_code=400, detail=f"Database error: {err}")
+    
+    finally:
+        cursor.close()
+        connection.close()
+
+def get_longest_streak(user_id: int):
+    """
+    Calculate the longest streak of steps greater than 1000 for a specific user_id.
+    """
+    connection = get_db_connection()  # Assuming this function is defined to get DB connection
+    cursor = connection.cursor(dictionary=True)  # Use dictionary cursor for easy result handling
+
+    try:
+        # SQL query to calculate the longest streak of steps greater than 1000
+        query = """
+        WITH streaks AS (
+            SELECT
+                date,
+                steps,
+                ROW_NUMBER() OVER (ORDER BY date) -
+                ROW_NUMBER() OVER (PARTITION BY (steps > 1000) ORDER BY date) AS streak_group
+            FROM steps
+            WHERE steps > 1000
+              AND user_id = %s
+        )
+        SELECT
+            MAX(streak_length) AS longest_streak
+        FROM (
+            SELECT
+                streak_group,
+                COUNT(*) AS streak_length
+            FROM streaks
+            GROUP BY streak_group
+        ) AS streak_lengths;
+        """
+        
+        cursor.execute(query, (user_id,))
+        result = cursor.fetchone()
+
+        # Return the longest streak or 0 if no result
+        return result["longest_streak"] if result["longest_streak"] is not None else 0
 
     except mysql.connector.Error as err:
         print("Database error:", err)  # Debugging
