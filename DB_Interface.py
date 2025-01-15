@@ -496,3 +496,50 @@ def check_account(user_data: dict):
     finally:
         cursor.close()
         connection.close()
+
+def get_user_monthly_steps(user_id: int):
+    """
+    Fetch all steps for a specific user_id grouped by date for the current month.
+    """
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)  # Use dictionary cursor for easy result handling
+
+    try:
+        # Query to fetch steps for the current month grouped by date
+        query = """
+        SELECT 
+            DATE(date) AS step_date, 
+            SUM(steps) AS total_steps
+        FROM 
+            Steps
+        WHERE 
+            user_id = %s
+            AND MONTH(date) = MONTH(CURRENT_DATE())
+            AND YEAR(date) = YEAR(CURRENT_DATE())
+        GROUP BY 
+            DATE(date)
+        ORDER BY 
+            step_date;
+        """
+        cursor.execute(query, (user_id,))
+        steps_data = cursor.fetchall()
+
+        # Convert Decimal to int and format the step_date
+        formatted_data = [
+            {
+                "step_date": item["step_date"].strftime("%Y-%m-%d"),
+                "total_steps": int(item["total_steps"])
+            }
+            for item in steps_data
+        ]
+
+        print (formatted_data)
+        return formatted_data
+
+    except mysql.connector.Error as err:
+        print("Database error:", err)  # Debugging
+        raise HTTPException(status_code=400, detail=f"Database error: {err}")
+    
+    finally:
+        cursor.close()
+        connection.close()
