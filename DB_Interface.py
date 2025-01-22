@@ -165,12 +165,13 @@ def insert_activity_data(activity_data: dict):
     try:
         # Insert into activities table
         query_activities = """INSERT INTO activities (
-                                activity, duration, user_id
-                              ) VALUES (%s, %s, %s)"""
+                                activity, duration, user_id, activity_date
+                              ) VALUES (%s, %s, %s, %s)"""
         cursor.execute(query_activities, (
             activity_data['activity'],
             activity_data['duration'],
-            activity_data['user_id']
+            activity_data['user_id'],
+            activity_data['activity_date']
         ))
         
         connection.commit()
@@ -190,7 +191,7 @@ def fetch_activities(user_id: int):
 
     try:
         # Fetch activities for a specific user_id
-        query = """SELECT activity_id, activity, duration 
+        query = """SELECT activity_id, activity, duration, activity_date
                    FROM activities 
                    WHERE user_id = %s"""
         cursor.execute(query, (user_id,))
