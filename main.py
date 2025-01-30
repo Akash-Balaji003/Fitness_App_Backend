@@ -14,9 +14,11 @@ async def register(request: Request):
         user_data = await request.json()
         print("Received user data:", user_data)  # Debugging
         register_user(user_data)
+        logging.info("Received user data : %s", user_data)  # Debugging
         return {"message": "User registered successfully"}
     except Exception as e:
         print("Error:", str(e))  # Debugging
+        logging.error("Received Error data : ", str(e))  # Debugging
         raise HTTPException(status_code=400, detail=f"Bad request: {str(e)}")
 
 @app.post("/login")
