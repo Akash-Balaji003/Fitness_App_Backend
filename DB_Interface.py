@@ -89,7 +89,7 @@ def login_user(user_data: dict):
     try:
         # Check if user exists and retrieve details
         query = """
-            SELECT user_id, password, username, phone_number, diet, height, weight, email, gender, experience, stepgoal
+            SELECT user_id, password, username, phone_number, height, weight, email, gender, experience, stepgoal, blood_group
             FROM Users
             WHERE phone_number = %s
         """
@@ -111,13 +111,14 @@ def login_user(user_data: dict):
             "user_id": db_user['user_id'],
             "username": db_user['username'],
             "phone_number": db_user['phone_number'],
-            "diet": db_user['diet'],
             "height": db_user['height'],
             "weight": db_user['weight'],
             "email": db_user['email'],
             "gender": db_user['gender'],
             "experience": db_user['experience'],
-            "stepgoal": db_user['stepgoal']
+            "stepgoal": db_user['stepgoal'],
+            "blood_group": db_user['blood_group']
+
         }
 
     except mysql.connector.Error as err:
@@ -218,7 +219,7 @@ def update_user(user_data: dict):
         SET 
             height = %s,
             weight = %s,
-            diet = %s,
+            blood_group = %s,
             experience = %s,
             stepgoal = %s
         WHERE user_id = %s
@@ -226,7 +227,7 @@ def update_user(user_data: dict):
         cursor.execute(query, (
             user_data['height'],
             user_data['weight'],
-            user_data['diet'],
+            user_data['blood'],
             user_data['experience'],
             user_data['stepgoal'],
             user_data['user_id']  # Using user_id as the identifier
