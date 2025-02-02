@@ -89,7 +89,7 @@ def login_user(user_data: dict):
     try:
         # Check if user exists and retrieve details
         query = """
-            SELECT user_id, password, username, phone_number, height, weight, email, gender, experience, stepgoal, blood_group
+            SELECT user_id, password, username, phone_number, height, weight, email, gender, experience, stepgoal, blood_group, DOB
             FROM Users
             WHERE phone_number = %s
         """
@@ -117,7 +117,8 @@ def login_user(user_data: dict):
             "gender": db_user['gender'],
             "experience": db_user['experience'],
             "stepgoal": db_user['stepgoal'],
-            "blood_group": db_user['blood_group']
+            "blood_group": db_user['blood_group'],
+            "DOB": db_user['DOB']
 
         }
 
