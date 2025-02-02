@@ -589,3 +589,30 @@ def get_longest_streak(user_id: int):
     finally:
         cursor.close()
         connection.close()
+
+def get_total_steps_for_user(user_id: int):
+    connection = get_db_connection()
+    cursor = connection.cursor()
+
+    try:
+        # Query to select the total sum of steps for the specific user_id
+        query = """
+        SELECT SUM(steps) AS total_steps
+        FROM Steps
+        WHERE user_id = %s;
+        """
+        cursor.execute(query, (user_id,))
+        result = cursor.fetchone()  # Fetch the single result
+
+        if result is None or result[0] is None:
+            raise HTTPException(status_code=404, detail="No step data found for the given user_id")
+
+        return {"total_steps": result[0]}  # Access the value by index
+
+    except mysql.connector.Error as err:
+        print("Database error:", err)  # Debugging
+        raise HTTPException(status_code=400, detail=f"Database error: {err}")
+    
+    finally:
+        cursor.close()
+        connection.close()
