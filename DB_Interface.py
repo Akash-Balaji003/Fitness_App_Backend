@@ -1,6 +1,7 @@
 from fastapi import HTTPException
 import mysql.connector
 from passlib.context import CryptContext
+from datetime import datetime, timedelta
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -609,6 +610,36 @@ def get_total_steps_for_user(user_id: int):
             raise HTTPException(status_code=404, detail="No step data found for the given user_id")
 
         return {"total_steps": result[0]}  # Access the value by index
+
+    except mysql.connector.Error as err:
+        print("Database error:", err)  # Debugging
+        raise HTTPException(status_code=400, detail=f"Database error: {err}")
+    
+    finally:
+        cursor.close()
+        connection.close()
+
+def get_total_steps_previous_day(user_id: int):
+    connection = get_db_connection()
+    cursor = connection.cursor()
+
+    try:
+        # Calculate the previous day's date
+        previous_day = (datetime.now() - timedelta(days=1)).date()
+
+        # Query to fetch the total_steps for the previous day
+        query = """
+        SELECT total_stepcount
+        FROM Steps
+        WHERE user_id = %s AND DATE(date) = %s;
+        """
+        cursor.execute(query, (user_id, previous_day))
+        result = cursor.fetchone()  # Fetch the single result
+
+        if result is None:
+            raise HTTPException(status_code=404, detail="No step data found for the previous day")
+
+        return {"total_steps_previous_day": result[0]}  # Return the value
 
     except mysql.connector.Error as err:
         print("Database error:", err)  # Debugging

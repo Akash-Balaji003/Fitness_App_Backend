@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Request
 import logging
 
-from DB_Interface import check_account, fetch_activities, get_longest_streak, get_pending_friend_requests, get_total_steps_for_user, get_user_monthly_steps, get_weekly_statistics, insert_activity_data, leaderboard_data, list_friends, login_user, register_user, respond_friend_request, search_users_by_name, send_friend_request, update_steps, update_user
+from DB_Interface import check_account, fetch_activities, get_longest_streak, get_pending_friend_requests, get_total_steps_for_user, get_total_steps_previous_day, get_user_monthly_steps, get_weekly_statistics, insert_activity_data, leaderboard_data, list_friends, login_user, register_user, respond_friend_request, search_users_by_name, send_friend_request, update_steps, update_user
 
 app = FastAPI()
 
@@ -157,3 +157,8 @@ async def Streaks(id: int):
 async def totalSteps(id: int):
     logging.info("Get Total Steps for ID: %s", id)  # Debugging with proper formatting
     return get_total_steps_for_user(id)
+
+@app.get("/get-total-sensor-steps")
+async def totalSteps(id: int):
+    logging.info("Get Total Sensor Steps for ID: %s", id)  # Debugging with proper formatting
+    return get_total_steps_previous_day(id)
