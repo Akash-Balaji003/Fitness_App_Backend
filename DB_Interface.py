@@ -30,7 +30,7 @@ def update_steps(step_data: dict):
         query = """
         INSERT INTO Steps (user_id, date, daily_step_count, midnight_step_count)
         VALUES (%s, %s, %s, %s)
-        ON DUPLICATE KEY UPDATE steps = VALUES(steps), updated_at = CURRENT_TIMESTAMP;
+        ON DUPLICATE KEY UPDATE daily_step_count = VALUES(daily_step_count), updated_at = CURRENT_TIMESTAMP;
         """
         cursor.execute(query, (
             step_data['user_id'], 
@@ -562,7 +562,7 @@ def get_longest_streak(user_id: int):
                 date,
                 daily_step_count,
                 ROW_NUMBER() OVER (ORDER BY date) -
-                ROW_NUMBER() OVER (PARTITION BY (steps > 1000) ORDER BY date) AS streak_group
+                ROW_NUMBER() OVER (PARTITION BY (daily_step_count > 1000) ORDER BY date) AS streak_group
             FROM steps
             WHERE daily_step_count > 1000
               AND user_id = %s
