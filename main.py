@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import HTMLResponse
 import logging
 
 from DB_Interface import check_account, fetch_activities, get_longest_streak, get_pending_friend_requests, get_total_steps_for_user, get_total_steps_previous_day, get_user_monthly_steps, get_weekly_statistics, insert_activity_data, leaderboard_data, list_friends, login_user, register_user, respond_friend_request, search_users_by_name, send_friend_request, update_steps, update_user
@@ -7,6 +8,19 @@ app = FastAPI()
 
 # Logging configuration
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
+@app.post("/", response_class=HTMLResponse)
+async def fastapi_home():
+    return """
+    <html>
+        <head>
+            <title>Some HTML in here</title>
+        </head>
+        <body>
+            <h1>Look ma! HTML!</h1>
+        </body>
+    </html>
+    """
 
 @app.post("/register")
 async def register(request: Request):

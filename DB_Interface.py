@@ -28,14 +28,15 @@ def update_steps(step_data: dict):
     try:
         # Insert into Users table with diet included
         query = """
-        INSERT INTO Steps (user_id, date, steps)
-        VALUES (%s, %s, %s)
+        INSERT INTO Steps (user_id, date, daily_step_count, midnight_step_count)
+        VALUES (%s, %s, %s, %s)
         ON DUPLICATE KEY UPDATE steps = VALUES(steps), updated_at = CURRENT_TIMESTAMP;
         """
         cursor.execute(query, (
             step_data['user_id'], 
             step_data['date'], 
             step_data['steps'], 
+            step_data['midnight_step_count'] # Check this properly
         ))
         connection.commit()
 
@@ -120,7 +121,6 @@ def login_user(user_data: dict):
             "stepgoal": db_user['stepgoal'],
             "blood_group": db_user['blood_group'],
             "DOB": db_user['DOB']
-
         }
 
     except mysql.connector.Error as err:
@@ -137,7 +137,7 @@ def get_weekly_statistics(user_id: int):
         cursor.execute("""
             SELECT 
                 DATE(date) AS day,
-                SUM(steps) AS total_steps
+                SUM(daily_step_count) AS total_steps
             FROM Steps
             WHERE 
                 user_id = %s AND 
@@ -376,7 +376,7 @@ def leaderboard_data(user_id: int):
         SELECT 
             users.user_id, 
             users.username, 
-            COALESCE(steps.steps, 0) AS step_count
+            COALESCE(steps.daily_step_count, 0) AS step_count
         FROM friendships
         JOIN users 
             ON (users.user_id = friendships.requester_id AND friendships.recipient_id = %s) 
@@ -391,7 +391,7 @@ def leaderboard_data(user_id: int):
         SELECT 
             %s AS user_id, 
             users.username, 
-            COALESCE(steps.steps, 0) AS step_count
+            COALESCE(steps.daily_step_count, 0) AS step_count
         FROM users
         LEFT JOIN steps
             ON steps.user_id = users.user_id 
@@ -513,7 +513,7 @@ def get_user_monthly_steps(user_id: int):
         query = """
         SELECT 
             DATE(date) AS step_date, 
-            SUM(steps) AS total_steps
+            SUM(daily_step_count) AS total_steps
         FROM 
             Steps
         WHERE 
@@ -560,11 +560,11 @@ def get_longest_streak(user_id: int):
         WITH streaks AS (
             SELECT
                 date,
-                steps,
+                daily_step_count,
                 ROW_NUMBER() OVER (ORDER BY date) -
                 ROW_NUMBER() OVER (PARTITION BY (steps > 1000) ORDER BY date) AS streak_group
             FROM steps
-            WHERE steps > 1000
+            WHERE daily_step_count > 1000
               AND user_id = %s
         )
         SELECT
@@ -599,7 +599,7 @@ def get_total_steps_for_user(user_id: int):
     try:
         # Query to select the total sum of steps for the specific user_id
         query = """
-        SELECT SUM(steps) AS total_steps
+        SELECT SUM(daily_step_count) AS total_steps
         FROM Steps
         WHERE user_id = %s;
         """
@@ -629,7 +629,7 @@ def get_total_steps_previous_day(user_id: int):
 
         # Query to fetch the total_steps for the previous day
         query = """
-        SELECT total_stepcount
+        SELECT midnight_step_count
         FROM Steps
         WHERE user_id = %s AND DATE(date) = %s;
         """
@@ -639,7 +639,7 @@ def get_total_steps_previous_day(user_id: int):
         if result is None:
             raise HTTPException(status_code=404, detail="No step data found for the previous day")
 
-        return {"total_steps_previous_day": result[0]}  # Return the value
+        return {"total_steps": result[0]}  # Return the value
 
     except mysql.connector.Error as err:
         print("Database error:", err)  # Debugging
