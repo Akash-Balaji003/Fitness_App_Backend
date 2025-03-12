@@ -58,8 +58,8 @@ def register_user(user_data: dict):
 
     try:
         # Insert into Users table with diet included
-        query_users = """INSERT INTO users (username, phone_number, email, DOB, height, weight, blood_group, gender, experience, stepgoal, password) 
-                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
+        query_users = """INSERT INTO users (username, phone_number, email, DOB, height, weight, blood_group, gender, experience, stepgoal, caloriegoal, password) 
+                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
         cursor.execute(query_users, (
             user_data['username'], 
             user_data['phone_number'], 
@@ -71,6 +71,7 @@ def register_user(user_data: dict):
             user_data['gender'],
             user_data['experience'],
             user_data['stepgoal'],
+            user_data['caloriegoal'],
             hashed_password
         ))
         connection.commit()
