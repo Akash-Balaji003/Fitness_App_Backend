@@ -1,9 +1,13 @@
+import logging
 from fastapi import HTTPException
 import mysql.connector
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# Logging configuration
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
@@ -26,11 +30,16 @@ def update_steps(step_data: dict):
     cursor = connection.cursor()
 
     try:
+        logging.info("[INSIDE UPDATE STEPS DB FUNC] Updated step data: %s", step_data)  # Debugging
+        logging.info("[INSIDE UPDATE STEPS DB FUNC] Midnight step data: %s", step_data["midnight_step_count"])  # Debugging
         # Insert into Users table with diet included
         query = """
         INSERT INTO Steps (user_id, date, daily_step_count, midnight_step_count)
         VALUES (%s, %s, %s, %s)
-        ON DUPLICATE KEY UPDATE daily_step_count = VALUES(daily_step_count), updated_at = CURRENT_TIMESTAMP;
+        ON DUPLICATE KEY UPDATE 
+            daily_step_count = VALUES(daily_step_count), 
+            midnight_step_count = VALUES(midnight_step_count), 
+            updated_at = CURRENT_TIMESTAMP;
         """
         cursor.execute(query, (
             step_data['user_id'], 
@@ -58,8 +67,8 @@ def register_user(user_data: dict):
 
     try:
         # Insert into Users table with diet included
-        query_users = """INSERT INTO users (username, phone_number, email, DOB, height, weight, blood_group, gender, experience, stepgoal, password) 
-                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
+        query_users = """INSERT INTO users (username, phone_number, email, DOB, height, weight, blood_group, gender, experience, stepgoal, caloriegoal, password) 
+                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
         cursor.execute(query_users, (
             user_data['username'], 
             user_data['phone_number'], 
@@ -71,6 +80,7 @@ def register_user(user_data: dict):
             user_data['gender'],
             user_data['experience'],
             user_data['stepgoal'],
+            user_data['caloriegoal'],
             hashed_password
         ))
         connection.commit()
@@ -619,22 +629,24 @@ def get_total_steps_for_user(user_id: int):
         cursor.close()
         connection.close()
 
-def get_total_steps_previous_day(user_id: int):
+def get_total_steps_previous_day(user_id):
     connection = get_db_connection()
     cursor = connection.cursor()
 
     try:
         # Calculate the previous day's date
         previous_day = (datetime.now() - timedelta(days=1)).date()
+        print("Previous Day: ", previous_day)
 
         # Query to fetch the total_steps for the previous day
         query = """
         SELECT midnight_step_count
         FROM Steps
-        WHERE user_id = %s AND DATE(date) = %s;
+        WHERE user_id = %s AND date = %s;
         """
         cursor.execute(query, (user_id, previous_day))
         result = cursor.fetchone()  # Fetch the single result
+        print("Result: ", result)
 
         if result is None:
             raise HTTPException(status_code=404, detail="No step data found for the previous day")
@@ -642,6 +654,33 @@ def get_total_steps_previous_day(user_id: int):
         return {"total_steps": result[0]}  # Return the value
 
     except mysql.connector.Error as err:
+        print("Database error:", err)  # Debugging
+        raise HTTPException(status_code=400, detail=f"Database error: {err}")
+    
+    finally:
+        cursor.close()
+        connection.close()
+
+# Function to post feedback to db
+def post_feedback_to_db(feedback):
+    connection = get_db_connection()
+    cursor = connection.cursor()
+
+    try:
+        logging.info("[INSIDE UPDATE FEEDBACK DB FUNC] Updated step data: %s", feedback)  # Debugging
+        # Insert into Users table with diet included
+        query = """
+        INSERT INTO feedback (user_id, description)
+        VALUES (%s, %s)
+        """
+        cursor.execute(query, (
+            feedback["user_id"],
+            feedback["description"]
+        ))
+        connection.commit()
+
+    except mysql.connector.Error as err:
+        connection.rollback()
         print("Database error:", err)  # Debugging
         raise HTTPException(status_code=400, detail=f"Database error: {err}")
     

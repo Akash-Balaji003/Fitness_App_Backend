@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 import logging
 
-from DB_Interface import check_account, fetch_activities, get_longest_streak, get_pending_friend_requests, get_total_steps_for_user, get_total_steps_previous_day, get_user_monthly_steps, get_weekly_statistics, insert_activity_data, leaderboard_data, list_friends, login_user, register_user, respond_friend_request, search_users_by_name, send_friend_request, update_steps, update_user
+from DB_Interface import post_feedback_to_db, check_account, fetch_activities, get_longest_streak, get_pending_friend_requests, get_total_steps_for_user, get_total_steps_previous_day, get_user_monthly_steps, get_weekly_statistics, insert_activity_data, leaderboard_data, list_friends, login_user, register_user, respond_friend_request, search_users_by_name, send_friend_request, update_steps, update_user
 
 app = FastAPI()
 
@@ -44,6 +44,10 @@ async def login(request: Request):
 @app.post("/update-steps")
 async def stepCount(request: Request):
     step_data = await request.json()
+    logging.info("%s, %s, %s, %s", step_data['user_id'], 
+            step_data['date'], 
+            step_data['steps'], 
+            step_data['midnight_step_count'])
     update_steps(step_data)
     logging.info("Updated step data: %s", step_data)  # Debugging
     return {"status": "success", "message": "Steps updated successfully"}
@@ -173,6 +177,16 @@ async def totalSteps(id: int):
     return get_total_steps_for_user(id)
 
 @app.get("/get-total-sensor-steps")
-async def totalSteps(id: int):
+async def get_total_sensor_steps(id):
     logging.info("Get Total Sensor Steps for ID: %s", id)  # Debugging with proper formatting
     return get_total_steps_previous_day(id)
+
+@app.get("/feedback")
+async def post_feedback(request: Request):
+    try:
+        feedback = await request.json()
+        post_feedback_to_db(feedback)
+
+    except Exception as e:
+        logging.error("Error:", str(e))  # Debugging
+        raise HTTPException(status_code=400, detail=f"Bad request: {str(e)}") 
