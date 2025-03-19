@@ -181,7 +181,7 @@ async def get_total_sensor_steps(id):
     logging.info("Get Total Sensor Steps for ID: %s", id)  # Debugging with proper formatting
     return get_total_steps_previous_day(id)
 
-@app.get("/feedback")
+@app.post("/feedback")
 async def post_feedback(request: Request):
     try:
         feedback = await request.json()
