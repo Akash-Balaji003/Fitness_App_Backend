@@ -13,12 +13,10 @@ def hash_password(password: str):
 
 def get_db_connection():
     return mysql.connector.connect(
-        host="fitness-database.mysql.database.azure.com",
-        port=3306,
-        username="akash",
+        host="localhost",
+        username="root",
         password="Akash003!",
         database="fitness"
-
     )
 
 def update_steps(step_data: dict):
@@ -646,6 +644,86 @@ def get_total_steps_previous_day(user_id: int):
         print("Database error:", err)  # Debugging
         raise HTTPException(status_code=400, detail=f"Database error: {err}")
     
+    finally:
+        cursor.close()
+        connection.close()
+
+def insert_transaction_data(transaction_data: dict):
+    connection = get_db_connection()
+    cursor = connection.cursor()
+
+    try:
+        query = """
+            INSERT INTO transactions (
+                user_id, transaction_type, activity_type, amount
+            ) VALUES (%s, %s, %s, %s)
+        """
+        cursor.execute(query, (
+            transaction_data['user_id'],
+            transaction_data['transaction_type'],
+            transaction_data['activity_type'],
+            transaction_data['amount']
+        ))
+
+        connection.commit()
+
+    except mysql.connector.Error as err:
+        connection.rollback()
+        print("Database error:", err)
+        raise HTTPException(status_code=400, detail=f"Database error: {err}")
+
+    finally:
+        cursor.close()
+        connection.close()
+
+def fetch_transactions(user_id: int):
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        query = """
+            SELECT transaction_id, transaction_type, activity_type, amount, created_at
+            FROM transactions
+            WHERE user_id = %s
+            ORDER BY created_at DESC
+        """
+        cursor.execute(query, (user_id,))
+        transactions = cursor.fetchall()
+
+        print(transactions)  # Debugging output
+        return transactions
+
+    except mysql.connector.Error as err:
+        print("Database error:", err)
+        raise HTTPException(status_code=400, detail=f"Database error: {err}")
+
+    finally:
+        cursor.close()
+        connection.close()
+
+def get_user_credit_balance(user_id: int):
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)  # So we get column names in result
+
+    try:
+        query = """
+            SELECT user_id, credit_balance
+            FROM users
+            WHERE user_id = %s
+            LIMIT 1
+        """
+        cursor.execute(query, (user_id,))
+        user = cursor.fetchone()
+
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        return {"user_id": user['user_id'], "credit_balance": float(user['credit_balance'])}
+
+    except mysql.connector.Error as err:
+        print("Database error:", err)
+        raise HTTPException(status_code=400, detail=f"Database error: {err}")
+
     finally:
         cursor.close()
         connection.close()

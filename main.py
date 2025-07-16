@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 import logging
 
-from DB_Interface import check_account, fetch_activities, get_longest_streak, get_pending_friend_requests, get_total_steps_for_user, get_total_steps_previous_day, get_user_monthly_steps, get_weekly_statistics, insert_activity_data, leaderboard_data, list_friends, login_user, register_user, respond_friend_request, search_users_by_name, send_friend_request, update_steps, update_user
+from DB_Interface import check_account, fetch_activities, fetch_transactions, get_longest_streak, get_pending_friend_requests, get_total_steps_for_user, get_total_steps_previous_day, get_user_credit_balance, get_user_monthly_steps, get_weekly_statistics, insert_activity_data, insert_transaction_data, leaderboard_data, list_friends, login_user, register_user, respond_friend_request, search_users_by_name, send_friend_request, update_steps, update_user
 
 app = FastAPI()
 
@@ -176,3 +176,24 @@ async def totalSteps(id: int):
 async def totalSteps(id: int):
     logging.info("Get Total Sensor Steps for ID: %s", id)  # Debugging with proper formatting
     return get_total_steps_previous_day(id)
+
+@app.post("/new-transaction")
+async def register(request: Request):
+    try:
+        user_data = await request.json()
+        print("Received user data:", user_data)  # Debugging
+        insert_transaction_data(user_data)
+        return {"message": "Transaction Noted successfully"}
+    except Exception as e:
+        print("Error:", str(e))  # Debugging
+        raise HTTPException(status_code=400, detail=f"Bad request: {str(e)}")
+    
+@app.get("/get-transaction")
+async def getTransaction(id: int):
+    logging.info("Get Transaction for ID: %s", id)  # Debugging with proper formatting
+    return fetch_transactions(id)
+
+@app.get("/get-balance")
+async def getTransaction(id: int):
+    logging.info("Get Balance for ID: %s", id)  # Debugging with proper formatting
+    return get_user_credit_balance(id)
