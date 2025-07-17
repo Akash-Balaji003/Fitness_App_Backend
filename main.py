@@ -177,7 +177,7 @@ async def totalSteps(id: int):
     return get_total_steps_for_user(id)
 
 @app.get("/get-total-sensor-steps")
-async def get_total_sensor_steps(id):
+async def get_total_sensor_steps(id: int):
     logging.info("Get Total Sensor Steps for ID: %s", id)  # Debugging with proper formatting
     return get_total_steps_previous_day(id)
 

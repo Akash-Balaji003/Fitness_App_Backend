@@ -99,7 +99,7 @@ def login_user(user_data: dict):
     try:
         # Check if user exists and retrieve details
         query = """
-            SELECT user_id, password, username, phone_number, height, weight, email, gender, experience, stepgoal, blood_group, DOB
+            SELECT user_id, password, username, phone_number, height, weight, email, gender, experience, stepgoal, blood_group, DOB, caloriegoal
             FROM Users
             WHERE phone_number = %s
         """
@@ -128,7 +128,8 @@ def login_user(user_data: dict):
             "experience": db_user['experience'],
             "stepgoal": db_user['stepgoal'],
             "blood_group": db_user['blood_group'],
-            "DOB": db_user['DOB']
+            "DOB": db_user['DOB'],
+            "caloriegoal": db_user['caloriegoal']
         }
 
     except mysql.connector.Error as err:
@@ -627,7 +628,7 @@ def get_total_steps_for_user(user_id: int):
         cursor.close()
         connection.close()
 
-def get_total_steps_previous_day(user_id):
+def get_total_steps_previous_day(user_id: int):
     connection = get_db_connection()
     cursor = connection.cursor()
 
@@ -639,15 +640,18 @@ def get_total_steps_previous_day(user_id):
         # Query to fetch the total_steps for the previous day
         query = """
         SELECT midnight_step_count
-        FROM Steps
+        FROM steps
         WHERE user_id = %s AND date = %s;
         """
         cursor.execute(query, (user_id, previous_day))
         result = cursor.fetchone()  # Fetch the single result
+
         print("Result: ", result)
 
         if result is None:
             raise HTTPException(status_code=404, detail="No step data found for the previous day")
+        if result[0] is None:
+            return {"total_steps": 0}
 
         return {"total_steps": result[0]}  # Return the value
 
@@ -756,7 +760,7 @@ def get_user_credit_balance(user_id: int):
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
-        return {"user_id": user['user_id'], "credit_balance": float(user['credit_balance'])}
+        return float(user['credit_balance'])
 
     except mysql.connector.Error as err:
         print("Database error:", err)
