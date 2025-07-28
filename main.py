@@ -1,8 +1,8 @@
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse
 import logging
 
-from DB_Interface import post_feedback_to_db, check_account, fetch_activities, fetch_transactions, get_longest_streak, get_pending_friend_requests, get_total_steps_for_user, get_total_steps_previous_day, get_user_credit_balance, get_user_monthly_steps, get_weekly_statistics, insert_activity_data, insert_transaction_data, leaderboard_data, list_friends, login_user, register_user, respond_friend_request, search_users_by_name, send_friend_request, update_steps, update_user
+from DB_Interface import generate_qr, get_all_users, post_feedback_to_db, check_account, fetch_activities, fetch_transactions, get_longest_streak, get_pending_friend_requests, get_total_steps_for_user, get_total_steps_previous_day, get_user_credit_balance, get_user_monthly_steps, get_weekly_statistics, insert_activity_data, insert_transaction_data, leaderboard_data, list_friends, login_user, register_user, respond_friend_request, search_users_by_name, send_friend_request, update_steps, update_user
 
 app = FastAPI()
 
@@ -211,3 +211,46 @@ async def getTransaction(id: int):
 async def getTransaction(id: int):
     logging.info("Get Balance for ID: %s", id)  # Debugging with proper formatting
     return get_user_credit_balance(id)
+
+@app.get("/admin/get-users")
+async def getUsers():
+    try:
+        users = get_all_users()  # Call the function to search users by name
+        return users
+    except Exception as err:
+        raise HTTPException(status_code=500, detail=f"Error searching users: {err}")
+    
+@app.get("/admin/search-users")
+async def search_users(query: str):
+    try:
+        users = search_users(query)  # Call the function to search users by name
+        return users
+    except Exception as err:
+        raise HTTPException(status_code=500, detail=f"Error searching users: {err}")
+    
+@app.post("/generate-qr")
+async def generate_qr_endpoint(request: Request):
+    try:
+        body = await request.json()
+        name = body.get("name")
+        amount = body.get("amount")
+
+        if not name or amount is None:
+            raise ValueError("Missing 'name' or 'amount' in request body.")
+
+        # Save to unique filename
+        filename = f"{name}.png"
+        generate_qr(name, amount, filename)
+
+        return FileResponse(
+            path=filename,
+            filename=filename,
+            media_type='image/png',
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+
+    except Exception as e:
+        logging.error("QR Generation Error: %s", str(e))
+        raise HTTPException(status_code=400, detail=f"Bad request: {str(e)}")
+ 
+# Run the application with: uvicorn main:app --reload

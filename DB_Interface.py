@@ -1,8 +1,10 @@
 import logging
-from fastapi import HTTPException
+from fastapi import HTTPException, Query
 import mysql.connector
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
+import json
+import qrcode
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -663,7 +665,6 @@ def get_total_steps_previous_day(user_id: int):
         cursor.close()
         connection.close()
 
-# Function to post feedback to db
 def post_feedback_to_db(feedback):
     connection = get_db_connection()
     cursor = connection.cursor()
@@ -769,3 +770,98 @@ def get_user_credit_balance(user_id: int):
     finally:
         cursor.close()
         connection.close()
+
+# Admin functionalities
+def get_all_users():
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        query = """
+            SELECT 
+                user_id,
+                username,
+                phone_number,
+                email,
+                DOB,
+                height,
+                weight,
+                gender,
+                blood_group,
+                credit_balance
+            FROM users
+            """
+        cursor.execute(query)
+        users = cursor.fetchall()
+        print(users)
+        return users
+    except mysql.connector.Error as err:
+        print("Database error:", err)
+        raise HTTPException(status_code=400, detail=f"Database error: {err}")
+    finally:
+        cursor.close()
+        connection.close()
+
+def search_users(query: str = Query(..., min_length=1)):
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        sql_query = """
+            SELECT 
+                user_id,
+                username,
+                phone_number,
+                email,
+                DOB,
+                height,
+                weight,
+                gender,
+                blood_group,
+                credit_balance
+            FROM users
+            WHERE username LIKE %s
+        """
+        like_pattern = f"%{query}%"
+        cursor.execute(sql_query, (like_pattern,))
+        users = cursor.fetchall()
+        print(users)  # Debugging output
+        return users
+
+    except mysql.connector.Error as err:
+        print("Database error:", err)
+        raise HTTPException(status_code=500, detail=f"Database error: {err}")
+
+    finally:
+        cursor.close()
+        connection.close()
+
+def generate_qr(Name, amount, filename):
+    # Validate inputs (optional)
+    if not isinstance(amount, (int, float)):
+        raise ValueError("Amount must be a number")
+
+    # Create a dictionary of data
+    qr_data = {
+        "name": Name,
+        "transaction_type": "spend",
+        "activity_type": "redeem",
+        "amount": amount
+    }
+
+    # Convert dictionary to JSON string
+    json_string = json.dumps(qr_data)
+
+    # Generate QR code
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_M,
+        box_size=10,
+        border=4
+    )
+    qr.add_data(json_string)
+    qr.make(fit=True)
+
+    img = qr.make_image(fill_color="black", back_color="white")
+    img.save(filename)
+    print(f"QR code saved as {filename}")
