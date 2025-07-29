@@ -30,11 +30,11 @@ def update_steps(step_data: dict):
     cursor = connection.cursor()
 
     try:
-        logging.info("[INSIDE UPDATE STEPS DB FUNC] Updated step data: %s", step_data)  # Debugging
-        logging.info("[INSIDE UPDATE STEPS DB FUNC] Midnight step data: %s", step_data["midnight_step_count"])  # Debugging
-        # Insert into Users table with diet included
+        logging.info("[INSIDE UPDATE steps DB FUNC] Updated step data: %s", step_data)  # Debugging
+        logging.info("[INSIDE UPDATE steps DB FUNC] Midnight step data: %s", step_data["midnight_step_count"])  # Debugging
+        # Insert into users table with diet included
         query = """
-        INSERT INTO Steps (user_id, date, daily_step_count, midnight_step_count)
+        INSERT INTO steps (user_id, date, daily_step_count, midnight_step_count)
         VALUES (%s, %s, %s, %s)
         ON DUPLICATE KEY UPDATE 
             daily_step_count = VALUES(daily_step_count), 
@@ -66,7 +66,7 @@ def register_user(user_data: dict):
     hashed_password = hash_password(user_data['password'])
 
     try:
-        # Insert into Users table with diet included
+        # Insert into users table with diet included
         query_users = """INSERT INTO users (username, phone_number, email, DOB, height, weight, blood_group, gender, experience, stepgoal, caloriegoal, password) 
                          VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
         cursor.execute(query_users, (
@@ -102,7 +102,7 @@ def login_user(user_data: dict):
         # Check if user exists and retrieve details
         query = """
             SELECT user_id, password, username, phone_number, height, weight, email, gender, experience, stepgoal, blood_group, DOB, caloriegoal
-            FROM Users
+            FROM users
             WHERE phone_number = %s
         """
         cursor.execute(query, (user_data['phone_number'],))
@@ -149,7 +149,7 @@ def get_weekly_statistics(user_id: int):
             SELECT 
                 DATE(date) AS day,
                 SUM(daily_step_count) AS total_steps
-            FROM Steps
+            FROM steps
             WHERE 
                 user_id = %s AND 
                 date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
@@ -226,9 +226,9 @@ def update_user(user_data: dict):
     cursor = connection.cursor()
 
     try:
-        # Update the Users table with the provided data
+        # Update the users table with the provided data
         query = """
-        UPDATE Users
+        UPDATE users
         SET 
             height = %s,
             weight = %s,
@@ -489,7 +489,7 @@ def check_account(user_data: dict):
         # Check for existing account based on phone number or email
         query = """
         SELECT phone_number, email
-        FROM Users
+        FROM users
         WHERE phone_number = %s OR email = %s
         """
         cursor.execute(query, (
@@ -526,7 +526,7 @@ def get_user_monthly_steps(user_id: int):
             DATE(date) AS step_date, 
             SUM(daily_step_count) AS total_steps
         FROM 
-            Steps
+            steps
         WHERE 
             user_id = %s
             AND MONTH(date) = MONTH(CURRENT_DATE())
@@ -611,7 +611,7 @@ def get_total_steps_for_user(user_id: int):
         # Query to select the total sum of steps for the specific user_id
         query = """
         SELECT SUM(daily_step_count) AS total_steps
-        FROM Steps
+        FROM steps
         WHERE user_id = %s;
         """
         cursor.execute(query, (user_id,))
@@ -671,7 +671,7 @@ def post_feedback_to_db(feedback):
 
     try:
         logging.info("[INSIDE UPDATE FEEDBACK DB FUNC] Updated step data: %s", feedback)  # Debugging
-        # Insert into Users table with diet included
+        # Insert into users table with diet included
         query = """
         INSERT INTO feedback (user_id, description)
         VALUES (%s, %s)

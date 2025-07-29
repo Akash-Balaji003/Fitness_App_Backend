@@ -208,7 +208,7 @@ async def getTransaction(id: int):
     return fetch_transactions(id)
 
 @app.get("/get-balance")
-async def getTransaction(id: int):
+async def getBalance(id: int):
     logging.info("Get Balance for ID: %s", id)  # Debugging with proper formatting
     return get_user_credit_balance(id)
 
@@ -221,7 +221,7 @@ async def getUsers():
         raise HTTPException(status_code=500, detail=f"Error searching users: {err}")
     
 @app.get("/admin/search-users")
-async def search_users(query: str):
+async def admin_search_users(query: str):
     try:
         users = search_users(query)  # Call the function to search users by name
         return users
